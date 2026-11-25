@@ -1,0 +1,22 @@
+services:
+  munirix_client:
+    build: .
+    container_name: munirix_client
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      NEXTAUTH_URL: ${CLIENT_NEXTAUTH_URL:-https://client.munirix.net}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@house_crm_postgres:5432/${POSTGRES_DB:-house_crm}
+      DATABASE_SSL: "false"
+    networks:
+      - munirix_net
+
+networks:
+  munirix_net:
+    name: munirix_net
+    external: true

@@ -1,0 +1,4 @@
+minimumReleaseAgeExclude:
+  - '@ai-sdk/anthropic@4.0.108'
+  - '@ai-sdk/google@4.0.126'
+  - '@ai-sdk/openai@4.0.123'
