@@ -11,7 +11,7 @@ services:
       NODE_ENV: production
       PORT: 3001
       NEXTAUTH_URL: ${CLIENT_NEXTAUTH_URL:-https://client.munirix.net}
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@house_crm_postgres:5432/${POSTGRES_DB:-house_crm}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@munirix_postgres:5432/${POSTGRES_DB:-munirix}
       DATABASE_SSL: "false"
     networks:
       - munirix_net

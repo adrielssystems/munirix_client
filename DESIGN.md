@@ -1,7 +1,7 @@
-# House CRM — DESIGN.md ("Obsidian Prism")
+# Munirix — DESIGN.md ("Obsidian Prism")
 
 ## 1. Visual Theme & Atmosphere
-House CRM uses a high-craft dark-chrome system engineered for multi-tenant SaaS operations and modern medical/service clinics.
+Munirix uses a high-craft dark-chrome system engineered for multi-tenant SaaS operations and modern medical/service clinics.
 - **Persuade surfaces** (Landing `/`, Login `/login`): cinematic obsidian canvas layered with interactive WebGL aurora (`SoftAurora`), crisp display typography (`Space Grotesk` + `Inter`), and spotlight-reactive cards.
 - **Operate surfaces** (Tenant Dashboard `/dashboard/*`, Admin Console `/admin/*`, Calendar, Inbox): restrained dark elevation ladder (`#07080A` → `#0D1017` → `#131824`), crisp 1px hairlines, tabular numbers (`font-variant-numeric: tabular-nums`), high-contrast legibility (≥4.5:1), and tactile micro-interactions (`SquishSwitch`, `SpotlightCard`, `CountUp`) without visual noise.
 

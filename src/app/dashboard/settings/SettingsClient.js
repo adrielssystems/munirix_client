@@ -911,7 +911,7 @@ export default function SettingsClient() {
                     </label>
                     <input
                       className="hc-input"
-                      placeholder="house_crm_verify_token_2026"
+                      placeholder="munirix_verify_token_2026"
                       value={waForm.verify_token}
                       onChange={(e) => setWaForm({ ...waForm, verify_token: e.target.value })}
                     />

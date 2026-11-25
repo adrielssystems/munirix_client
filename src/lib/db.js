@@ -3,7 +3,7 @@
 const globalForPg = globalThis;
 
 const pool =
-  globalForPg.__houseCrmPgPool ||
+  globalForPg.__munirixPgPool ||
   new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: process.env.DATABASE_SSL === 'true' ? { rejectUnauthorized: false } : false,
@@ -13,7 +13,7 @@ const pool =
   });
 
 if (process.env.NODE_ENV !== 'production') {
-  globalForPg.__houseCrmPgPool = pool;
+  globalForPg.__munirixPgPool = pool;
 }
 
 export const query = (text, params) => pool.query(text, params);

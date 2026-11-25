@@ -7,7 +7,7 @@ function getMasterKey() {
   const raw =
     process.env.ENCRYPTION_KEY ||
     process.env.NEXTAUTH_SECRET ||
-    'house_crm_dev_fallback_key_change_in_production_2026';
+    'munirix_dev_fallback_key_change_in_production_2026';
   return crypto.createHash('sha256').update(String(raw)).digest();
 }
 

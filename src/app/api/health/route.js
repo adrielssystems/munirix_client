@@ -11,7 +11,7 @@ export async function GET() {
 
     return NextResponse.json({
       status: 'healthy',
-      app: 'House_CRM',
+      app: 'Munirix',
       environment: process.env.NODE_ENV || 'development',
       database: {
         connected: true,

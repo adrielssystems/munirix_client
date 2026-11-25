@@ -71,7 +71,7 @@ export async function syncAppointmentToGoogle(tenantId, appointment, contact, ti
       contact?.phone ? `Teléfono: ${contact.phone}` : null,
       appointment.triage_reason ? `Motivo / Triaje: ${appointment.triage_reason}` : null,
       appointment.notes ? `Notas: ${appointment.notes}` : null,
-      `Origen: ${appointment.source || 'House CRM'}`,
+      `Origen: ${appointment.source || 'Munirix'}`,
     ].filter(Boolean);
 
     const eventBody = {
