@@ -1,4 +1,4 @@
-﻿import { google } from 'googleapis';
+import { google } from 'googleapis';
 import { query } from '../db.js';
 import { encryptSecret, decryptSecret, signState, verifyState } from '../crypto.js';
 
