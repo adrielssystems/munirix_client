@@ -1,8 +1,16 @@
 import './globals.css';
 import NextAuthProvider from '@/components/ui/SessionProvider';
 
+function safeUrl(value, fallback) {
+  try {
+    return new URL(value || fallback);
+  } catch {
+    return new URL(fallback);
+  }
+}
+
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_CLIENT_URL || 'https://client.munirix.net'),
+  metadataBase: safeUrl(process.env.NEXT_PUBLIC_CLIENT_URL, 'https://client.munirix.net'),
   title: "Munirix — Workspace de Agentes IA",
   description: 'Panel operativo por organización con Agenda, WhatsApp IA, Pacientes y Google Workspace.',
   icons: {

@@ -25,11 +25,17 @@ export async function GET() {
       }
     });
   } catch (error) {
+    const detail =
+      error?.message ||
+      error?.errors?.map((e) => e.message).filter(Boolean).join(' | ') ||
+      error?.code ||
+      'unknown_db_error';
     return NextResponse.json(
       {
         status: 'error',
         message: 'Fallo al conectar con la base de datos PostgreSQL.',
-        error: error.message,
+        error: detail,
+        hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
       },
       { status: 500 }
     );

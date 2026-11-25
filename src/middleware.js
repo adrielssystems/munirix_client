@@ -4,7 +4,7 @@ import { getToken } from 'next-auth/jwt';
 export async function middleware(req) {
   const token = await getToken({
     req,
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || 'munirix_fallback_secret_set_NEXTAUTH_SECRET_in_env',
     cookieName: 'munirix-client.session-token',
   });
 

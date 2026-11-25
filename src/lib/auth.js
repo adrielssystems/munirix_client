@@ -185,7 +185,7 @@ export function createAuthOptions({ cookiePrefix = "munirix", requireSuperadminO
       strategy: "jwt",
       maxAge: 24 * 60 * 60,
     },
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: process.env.NEXTAUTH_SECRET || "munirix_fallback_secret_set_NEXTAUTH_SECRET_in_env",
   };
 }
 

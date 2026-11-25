@@ -7,7 +7,12 @@ import AuthPortal from '@/components/AuthPortal';
 export const dynamic = 'force-dynamic';
 
 export default async function ClientLoginPage() {
-  const session = await getServerSession(clientAuthOptions);
+  let session = null;
+  try {
+    session = await getServerSession(clientAuthOptions);
+  } catch (err) {
+    console.error('[LOGIN] Error leyendo sesión:', err?.message || err);
+  }
   if (session?.user) {
     redirect('/dashboard');
   }
