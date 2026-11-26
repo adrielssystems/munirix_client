@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { getActiveTenantContext } from '@/lib/auth';
-import { resolveTenantLLM } from '@/lib/ai/provider';
+import { resolveTenantLLM, resolveFallbackLLM } from '@/lib/ai/provider';
 import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
@@ -50,55 +50,67 @@ export async function POST(request) {
     }
 
     const { messages, workspaceName, timezone } = parsed.data;
-    const { model } = await resolveTenantLLM(ctx.tenantId);
+    const { model, provider } = await resolveTenantLLM(ctx.tenantId);
 
     const contextHeader = `Nombre actual del espacio: "${workspaceName || ctx.tenant.name}". Zona horaria: ${timezone || ctx.tenant.timezone || 'America/Caracas'}.`;
 
     let generatedConfig = null;
 
-    const result = await generateText({
-      model,
-      system: `${ARCHITECT_SYSTEM_PROMPT}\n\n${contextHeader}`,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-      temperature: 0.35,
-      stopWhen: stepCountIs(3),
-      tools: {
-        apply_onboarding_config: tool({
-          description: 'Guarda la configuración propuesta para el espacio y agente del cliente cuando ya se tiene suficiente información.',
-          inputSchema: z.object({
-            workspaceName: z.string().describe('Nombre del negocio o espacio personal'),
-            accountType: z.enum(['personal', 'business']),
-            industry: z.enum(['personal', 'general', 'aesthetics', 'dermatology', 'health_general', 'legal', 'realestate']),
-            needsAppointments: z.boolean(),
-            systemPrompt: z.string().describe('Instrucciones detalladas en español para el agente de WhatsApp'),
-            services: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  duration_minutes: z.number().int().min(5).max(480).default(30),
-                  price: z.number().nullable().optional(),
-                  preparation_notes: z.string().optional(),
-                })
-              )
-              .default([]),
-            availability: z
-              .array(
-                z.object({
-                  day_of_week: z.number().int().min(0).max(6),
-                  is_active: z.boolean(),
-                  start_time: z.string(),
-                  end_time: z.string(),
-                })
-              )
-              .default([]),
+    const runArchitect = (activeModel) =>
+      generateText({
+        model: activeModel,
+        system: `${ARCHITECT_SYSTEM_PROMPT}\n\n${contextHeader}`,
+        messages: messages.map((m) => ({ role: m.role, content: m.content })),
+        temperature: 0.35,
+        stopWhen: stepCountIs(3),
+        tools: {
+          apply_onboarding_config: tool({
+            description: 'Guarda la configuración propuesta para el espacio y agente del cliente cuando ya se tiene suficiente información.',
+            inputSchema: z.object({
+              workspaceName: z.string().describe('Nombre del negocio o espacio personal'),
+              accountType: z.enum(['personal', 'business']),
+              industry: z.enum(['personal', 'general', 'aesthetics', 'dermatology', 'health_general', 'legal', 'realestate']),
+              needsAppointments: z.boolean(),
+              systemPrompt: z.string().describe('Instrucciones detalladas en español para el agente de WhatsApp'),
+              services: z
+                .array(
+                  z.object({
+                    name: z.string(),
+                    duration_minutes: z.number().int().min(5).max(480).default(30),
+                    price: z.number().nullable().optional(),
+                    preparation_notes: z.string().optional(),
+                  })
+                )
+                .default([]),
+              availability: z
+                .array(
+                  z.object({
+                    day_of_week: z.number().int().min(0).max(6),
+                    is_active: z.boolean(),
+                    start_time: z.string(),
+                    end_time: z.string(),
+                  })
+                )
+                .default([]),
+            }),
+            execute: async (configInput) => {
+              generatedConfig = configInput;
+              return { ok: true };
+            },
           }),
-          execute: async (configInput) => {
-            generatedConfig = configInput;
-            return { ok: true };
-          },
-        }),
-      },
-    });
+        },
+      });
+
+    let result;
+    try {
+      result = await runArchitect(model);
+    } catch (primaryErr) {
+      const fb = resolveFallbackLLM(provider);
+      if (!fb) throw primaryErr;
+      console.warn(`[ONBOARDING AI-ASSIST] Fallback a ${fb.provider} por error en ${provider}:`, primaryErr.message);
+      generatedConfig = null;
+      result = await runArchitect(fb.model);
+    }
 
     const replyText =
       String(result.text || '').trim() ||

@@ -150,3 +150,15 @@ export async function resolveAdminLLM() {
   }
 }
 
+/**
+ * Fallback en tiempo de ejecución cuando el proveedor principal falla (ej. cuota 429 en Gemini Free Tier).
+ */
+export function resolveFallbackLLM(failedProvider = 'gemini') {
+  const fbProvider = failedProvider === 'deepseek' ? 'gemini' : 'deepseek';
+  const catalog = LLM_PROVIDER_CATALOG[fbProvider];
+  const fbKey = process.env[catalog?.envKey];
+  if (!catalog || !fbKey) return null;
+  const model = instantiateModel(fbProvider, catalog.defaultModel, fbKey);
+  return { model, provider: fbProvider, modelName: catalog.defaultModel };
+}
+

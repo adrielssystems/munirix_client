@@ -1,7 +1,7 @@
 ﻿import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { query } from '../db.js';
-import { resolveTenantLLM } from '../ai/provider.js';
+import { resolveTenantLLM, resolveFallbackLLM } from '../ai/provider.js';
 import {
   getAvailableSlots,
   createAppointment,
@@ -264,14 +264,33 @@ export async function runTenantAIAgent({
     }),
   };
 
-  const result = await generateText({
-    model,
-    system: systemPrompt,
-    messages: priorMessages,
-    temperature: Number(config.temperature ?? 0.3),
-    tools,
-    stopWhen: stepCountIs(5),
-  });
+  let activeProvider = provider;
+  let activeModelName = modelName;
+  let result;
+  try {
+    result = await generateText({
+      model,
+      system: systemPrompt,
+      messages: priorMessages,
+      temperature: Number(config.temperature ?? 0.3),
+      tools,
+      stopWhen: stepCountIs(5),
+    });
+  } catch (llmErr) {
+    const fb = config.use_platform_key ? resolveFallbackLLM(provider) : null;
+    if (!fb) throw llmErr;
+    console.warn(`[AGENT] Fallback a ${fb.provider} por error en ${provider}:`, llmErr.message);
+    activeProvider = fb.provider;
+    activeModelName = fb.modelName;
+    result = await generateText({
+      model: fb.model,
+      system: systemPrompt,
+      messages: priorMessages,
+      temperature: Number(config.temperature ?? 0.3),
+      tools,
+      stopWhen: stepCountIs(5),
+    });
+  }
 
   return {
     reply: result.text || '¿En qué horario te gustaría agendar tu consulta?',
