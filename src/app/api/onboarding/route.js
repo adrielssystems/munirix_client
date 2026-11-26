@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getActiveTenantContext } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { INDUSTRY_PRESETS, normalizeModules } from '@/lib/modules';
+import { createEvolutionInstance } from '@/lib/meta/evolution';
 
 const onboardingSchema = z.object({
   skip: z.boolean().optional(),
@@ -145,6 +146,33 @@ export async function POST(request) {
            VALUES ($1, $2, $3, $4, $5)`,
           [ctx.tenantId, rule.day_of_week, Boolean(rule.is_active), rule.start_time, rule.end_time]
         );
+      }
+    }
+
+    // Auto-aprovisionar instancia aislada en Evolution API para este tenant
+    const tenantSlug = updated.rows[0]?.slug || ctx.tenant.slug;
+    if (tenantSlug) {
+      await query(
+        `INSERT INTO tenant_meta_configs (tenant_id, channel, whatsapp_provider, evolution_instance, bot_enabled, is_active, updated_at)
+         VALUES ($1, 'whatsapp', 'evolution', $2, TRUE, TRUE, NOW())
+         ON CONFLICT (tenant_id, channel)
+         DO UPDATE SET evolution_instance = COALESCE(NULLIF(tenant_meta_configs.evolution_instance, ''), EXCLUDED.evolution_instance), updated_at = NOW()`,
+        [ctx.tenantId, tenantSlug]
+      );
+
+      if (process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY) {
+        const webhookBase = process.env.WEBHOOK_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://app.munirix.net';
+        const webhookUrl = `${webhookBase}/api/webhooks/evolution?instance=${encodeURIComponent(tenantSlug)}`;
+        try {
+          await createEvolutionInstance({
+            apiUrl: process.env.EVOLUTION_API_URL,
+            apiKey: process.env.EVOLUTION_API_KEY,
+            instance: tenantSlug,
+            webhookUrl,
+          });
+        } catch (evoErr) {
+          console.warn('[ONBOARDING] Aviso al pre-crear instancia Evolution:', evoErr.message);
+        }
       }
     }
 

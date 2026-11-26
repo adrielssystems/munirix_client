@@ -11,7 +11,7 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-async function getTenantEvolutionCreds(tenantId) {
+async function getTenantEvolutionCreds(tenantId, fallbackSlug = '') {
   const res = await query(
     `SELECT evolution_api_url, evolution_instance, evolution_api_key_encrypted
      FROM tenant_meta_configs
@@ -22,8 +22,8 @@ async function getTenantEvolutionCreds(tenantId) {
   const row = res.rows[0];
   const apiUrl = row?.evolution_api_url || process.env.EVOLUTION_API_URL || '';
   const apiKey = decryptSecret(row?.evolution_api_key_encrypted) || process.env.EVOLUTION_API_KEY || '';
-  const instance = row?.evolution_instance || '';
-  return { apiUrl, apiKey, instance };
+  const instance = row?.evolution_instance || fallbackSlug || '';
+  return { apiUrl, apiKey, instance, hasSavedInstance: Boolean(row?.evolution_instance) };
 }
 
 /**
@@ -33,7 +33,7 @@ export async function GET() {
   const ctx = await getActiveTenantContext();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
 
-  const creds = await getTenantEvolutionCreds(ctx.tenantId);
+  const creds = await getTenantEvolutionCreds(ctx.tenantId, ctx.tenant?.slug);
   if (!creds.apiUrl || !creds.instance || !creds.apiKey) {
     return NextResponse.json({
       configured: false,
@@ -61,12 +61,22 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const action = body.action || 'connect';
-    const creds = await getTenantEvolutionCreds(ctx.tenantId);
+    const creds = await getTenantEvolutionCreds(ctx.tenantId, ctx.tenant?.slug);
 
     if (!creds.apiUrl || !creds.instance || !creds.apiKey) {
       return NextResponse.json(
         { error: 'Configura y guarda primero la URL, Instancia y API Key de Evolution API.' },
         { status: 400 }
+      );
+    }
+
+    if (!creds.hasSavedInstance) {
+      await query(
+        `INSERT INTO tenant_meta_configs (tenant_id, channel, whatsapp_provider, evolution_instance, bot_enabled, is_active, updated_at)
+         VALUES ($1, 'whatsapp', 'evolution', $2, TRUE, TRUE, NOW())
+         ON CONFLICT (tenant_id, channel)
+         DO UPDATE SET evolution_instance = COALESCE(NULLIF(tenant_meta_configs.evolution_instance, ''), EXCLUDED.evolution_instance), updated_at = NOW()`,
+        [ctx.tenantId, creds.instance]
       );
     }
 
