@@ -6,8 +6,20 @@ import { createOAuth2Client, parseGoogleState, resolveGoogleOAuthApp } from '@/l
 
 export const dynamic = 'force-dynamic';
 
+function resolvePublicOrigin(req) {
+  if (process.env.NEXT_PUBLIC_CLIENT_URL) return process.env.NEXT_PUBLIC_CLIENT_URL.replace(/\/+$/, '');
+  if (process.env.NEXTAUTH_URL) return process.env.NEXTAUTH_URL.replace(/\/+$/, '');
+  const fwdHost = req.headers.get('x-forwarded-host') || req.headers.get('host');
+  if (fwdHost && !fwdHost.startsWith('0.0.0.0')) {
+    const proto = req.headers.get('x-forwarded-proto') || 'https';
+    return `${proto}://${fwdHost}`;
+  }
+  return new URL(req.url).origin;
+}
+
 export async function GET(req) {
-  const { searchParams, origin } = new URL(req.url);
+  const { searchParams } = new URL(req.url);
+  const origin = resolvePublicOrigin(req);
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const oauthError = searchParams.get('error');
