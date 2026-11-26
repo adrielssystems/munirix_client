@@ -1,19 +1,25 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
-import { clientAuthOptions } from '@/lib/auth';
+import { getActiveTenantContext } from '@/lib/auth';
 import AuthPortal from '@/components/AuthPortal';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ClientLoginPage() {
-  let session = null;
+  let ctx = { ok: false };
   try {
-    session = await getServerSession(clientAuthOptions);
+    ctx = await getActiveTenantContext();
   } catch (err) {
-    console.error('[LOGIN] Error leyendo sesión:', err?.message || err);
+    console.error('[LOGIN] Error validando sesión:', err?.message || err);
   }
-  if (session?.user) {
+
+  if (ctx.ok) {
+    if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+      redirect('/billing');
+    }
+    if (!ctx.tenant.onboarding_completed && ctx.user.role !== 'superadmin') {
+      redirect('/onboarding');
+    }
     redirect('/dashboard');
   }
 

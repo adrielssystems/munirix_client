@@ -1,19 +1,28 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
-import { clientAuthOptions } from '@/lib/auth';
+import { getActiveTenantContext } from '@/lib/auth';
 import AuthPortal from '@/components/AuthPortal';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ClientRegisterPage() {
-  let session = null;
+export default async function ClientRegisterPage({ searchParams }) {
+  let ctx = { ok: false };
   try {
-    session = await getServerSession(clientAuthOptions);
+    ctx = await getActiveTenantContext();
   } catch (err) {
-    console.error('[REGISTER] Error leyendo sesión:', err?.message || err);
+    console.error('[REGISTER] Error validando sesión:', err?.message || err);
   }
-  if (session?.user) {
+
+  const sp = await searchParams;
+  const planParam = ['profesional', 'negocio', 'empresa'].includes(sp?.plan) ? `?plan=${sp.plan}` : '';
+
+  if (ctx.ok) {
+    if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+      redirect(`/billing${planParam}`);
+    }
+    if (!ctx.tenant.onboarding_completed && ctx.user.role !== 'superadmin') {
+      redirect('/onboarding');
+    }
     redirect('/dashboard');
   }
 
