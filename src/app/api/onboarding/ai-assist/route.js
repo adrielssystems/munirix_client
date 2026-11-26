@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { generateText } from 'ai';
+import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { getActiveTenantContext } from '@/lib/auth';
 import { resolveTenantLLM } from '@/lib/ai/provider';
@@ -23,58 +23,9 @@ const requestSchema = z.object({
 const ARCHITECT_SYSTEM_PROMPT = `Eres el Arquitecto de Configuración de Munirix. Tu objetivo es ayudar a cualquier cliente (sin conocimientos técnicos) a configurar su Agente de IA para WhatsApp y su Agenda en pocos mensajes.
 
 REGLAS DE CONVERSACIÓN:
-1. Munirix sirve para CUALQUIER tipo de negocio o uso personal (barberías, restaurantes, tiendas, inmobiliarias, abogados, talleres, consultorios médicos, estética, profesores, asistentes personales, etc.). NUNCA asumas que es una clínica médica a menos que el usuario lo diga.
-2. Haz preguntas cortas, amables y concretas en español. Si falta información clave (ej: qué hace el negocio/asistente, servicios/productos principales con duración o precio si aplica, días y horario de atención), pregunta en máximo 2 o 3 viñetas cortas.
-3. En cuanto tengas suficiente información para armar una primera configuración útil (usualmente tras 1 o 2 respuestas del usuario), genera la configuración completa y pon "ready": true. El usuario podrá ajustarla luego.
-
-FORMATO DE RESPUESTA OBLIGATORIO:
-Responde ÚNICAMENTE con un objeto JSON válido (sin markdown \`\`\`json ni texto fuera del JSON) con esta estructura exacta:
-{
-  "ready": boolean,
-  "reply": "Mensaje amable para el usuario en español (si ready=false, haz las preguntas faltantes; si ready=true, resume lo que configuraste y dile que revise la vista previa).",
-  "config": null | {
-    "workspaceName": "Nombre del negocio o espacio",
-    "accountType": "personal" | "business",
-    "industry": "personal" | "general" | "aesthetics" | "dermatology" | "health_general" | "legal" | "realestate",
-    "needsAppointments": boolean,
-    "systemPrompt": "Instrucciones claras y completas en español para el agente de WhatsApp del cliente, incluyendo tono, reglas, servicios y cómo atender o agendar.",
-    "services": [
-      {
-        "name": "Nombre del servicio o producto",
-        "duration_minutes": 30,
-        "price": 25,
-        "preparation_notes": "Nota breve opcional o cadena vacía"
-      }
-    ],
-    "availability": [
-      { "day_of_week": 1, "is_active": true, "start_time": "09:00", "end_time": "18:00" },
-      { "day_of_week": 2, "is_active": true, "start_time": "09:00", "end_time": "18:00" },
-      { "day_of_week": 3, "is_active": true, "start_time": "09:00", "end_time": "18:00" },
-      { "day_of_week": 4, "is_active": true, "start_time": "09:00", "end_time": "18:00" },
-      { "day_of_week": 5, "is_active": true, "start_time": "09:00", "end_time": "18:00" },
-      { "day_of_week": 6, "is_active": false, "start_time": "09:00", "end_time": "13:00" },
-      { "day_of_week": 0, "is_active": false, "start_time": "09:00", "end_time": "13:00" }
-    ]
-  }
-}`;
-
-function extractJsonObject(raw) {
-  const cleaned = String(raw || '')
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim();
-  try {
-    return JSON.parse(cleaned);
-  } catch {
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if (start !== -1 && end > start) {
-      return JSON.parse(cleaned.slice(start, end + 1));
-    }
-    throw new Error('La IA no devolvió un JSON válido.');
-  }
-}
+1. Munirix sirve para CUALQUIER tipo de negocio o uso personal (barberías, restaurantes, tiendas, inmobiliarias, abogados, talleres, consultorios, estética, asistentes personales, etc.). NUNCA asumas que es una clínica médica a menos que el usuario lo diga.
+2. Haz preguntas cortas, amables y concretas en español.
+3. En cuanto el usuario te dé suficiente contexto (por ejemplo, tras 1 o 2 mensajes claros como "quiero un asistente personal para mi agenda"), NO sigas haciendo preguntas innecesarias: llama inmediatamente a la herramienta \`apply_onboarding_config\` con una configuración completa y práctica (para uso personal, puedes usar \`industry: "personal"\`, \`accountType: "personal"\`, servicios opcionales vacíos \`[]\` y horario estándar Lunes-Viernes 08:00-18:00), y luego responde amablemente explicando lo que dejaste listo.`;
 
 export async function POST(request) {
   try {
@@ -94,20 +45,63 @@ export async function POST(request) {
 
     const contextHeader = `Nombre actual del espacio: "${workspaceName || ctx.tenant.name}". Zona horaria: ${timezone || ctx.tenant.timezone || 'America/Caracas'}.`;
 
+    let generatedConfig = null;
+
     const result = await generateText({
       model,
       system: `${ARCHITECT_SYSTEM_PROMPT}\n\n${contextHeader}`,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       temperature: 0.35,
+      stopWhen: stepCountIs(3),
+      tools: {
+        apply_onboarding_config: tool({
+          description: 'Guarda la configuración propuesta para el espacio y agente del cliente cuando ya se tiene suficiente información.',
+          inputSchema: z.object({
+            workspaceName: z.string().describe('Nombre del negocio o espacio personal'),
+            accountType: z.enum(['personal', 'business']),
+            industry: z.enum(['personal', 'general', 'aesthetics', 'dermatology', 'health_general', 'legal', 'realestate']),
+            needsAppointments: z.boolean(),
+            systemPrompt: z.string().describe('Instrucciones detalladas en español para el agente de WhatsApp'),
+            services: z
+              .array(
+                z.object({
+                  name: z.string(),
+                  duration_minutes: z.number().int().min(5).max(480).default(30),
+                  price: z.number().nullable().optional(),
+                  preparation_notes: z.string().optional(),
+                })
+              )
+              .default([]),
+            availability: z
+              .array(
+                z.object({
+                  day_of_week: z.number().int().min(0).max(6),
+                  is_active: z.boolean(),
+                  start_time: z.string(),
+                  end_time: z.string(),
+                })
+              )
+              .default([]),
+          }),
+          execute: async (configInput) => {
+            generatedConfig = configInput;
+            return { ok: true };
+          },
+        }),
+      },
     });
 
-    const data = extractJsonObject(result.text);
+    const replyText =
+      String(result.text || '').trim() ||
+      (generatedConfig
+        ? '¡Listo! Ya preparé la configuración ideal para tu agente. Revisa el resumen abajo y presiona Guardar.'
+        : 'Cuéntame un poco más sobre cómo trabajas para terminar de configurarlo.');
 
     return NextResponse.json({
       ok: true,
-      ready: Boolean(data.ready),
-      reply: String(data.reply || 'Perfecto, continuemos con tu configuración.'),
-      config: data.ready && data.config ? data.config : null,
+      ready: Boolean(generatedConfig),
+      reply: replyText,
+      config: generatedConfig,
     });
   } catch (err) {
     console.error('[ONBOARDING AI-ASSIST] Error:', err);
