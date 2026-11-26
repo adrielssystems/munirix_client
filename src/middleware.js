@@ -12,9 +12,7 @@ export async function middleware(req) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
 
   if (isAuthPage) {
-    if (token) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
+    // login/page.js y register/page.js validan la existencia real del tenant en BD antes de redirigir
     return NextResponse.next();
   }
 
@@ -26,5 +24,5 @@ export async function middleware(req) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/onboarding/:path*', '/login', '/register'],
+  matcher: ['/dashboard/:path*', '/onboarding/:path*', '/billing/:path*', '/login', '/register'],
 };
