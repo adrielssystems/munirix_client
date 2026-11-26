@@ -165,7 +165,7 @@ export async function findOrProvisionGoogleUser({ email, name, googleSub, avatar
   }
 
   if (existing) {
-    if (existing.role !== 'superadmin' && !['active', 'pending_payment'].includes(existing.tenant_status)) {
+    if (existing.role !== 'superadmin' && !['active', 'trial', 'pending_payment'].includes(existing.tenant_status)) {
       throw new Error('El acceso para esta organización está suspendido.');
     }
 
@@ -193,8 +193,8 @@ export async function findOrProvisionGoogleUser({ email, name, googleSub, avatar
     const slug = await generateUniqueSlug(client, workspaceName);
 
     const tenantRes = await client.query(
-      `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type)
-       VALUES ($1, $2, 'pending_payment', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
+      `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type, trial_starts_at, trial_ends_at)
+       VALUES ($1, $2, 'trial', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business', NOW(), NOW() + INTERVAL '3 days')
        RETURNING id`,
       [workspaceName, slug, JSON.stringify(DEFAULT_MODULES)]
     );
@@ -256,8 +256,8 @@ export async function registerEmailTenantUser({ name, email, password }) {
     const slug = await generateUniqueSlug(client, workspaceName);
 
     const tenantRes = await client.query(
-      `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type)
-       VALUES ($1, $2, 'pending_payment', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
+      `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type, trial_starts_at, trial_ends_at)
+       VALUES ($1, $2, 'trial', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business', NOW(), NOW() + INTERVAL '3 days')
        RETURNING id`,
       [workspaceName, slug, JSON.stringify(DEFAULT_MODULES)]
     );

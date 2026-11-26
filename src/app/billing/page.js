@@ -23,6 +23,7 @@ export default async function BillingPage({ searchParams }) {
     <BillingClient
       initialPlan={initialPlan}
       tenantName={ctx.tenant.name}
+      tenantStatus={ctx.tenant.status}
       userEmail={ctx.user.email || ''}
     />
   );

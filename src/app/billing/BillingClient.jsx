@@ -25,7 +25,7 @@ const METHODS = [
   { id: 'pago_movil', label: 'Pago Móvil' },
 ];
 
-export default function BillingClient({ initialPlan, tenantName, userEmail }) {
+export default function BillingClient({ initialPlan, tenantName, tenantStatus, userEmail }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -141,11 +141,26 @@ export default function BillingClient({ initialPlan, tenantName, userEmail }) {
           <div className={styles.brandRow}>
             <img src="/brand/Logo_Munirix_sin_fondo.png" alt="Munirix" className={styles.logo} />
             <div>
-              <h1>Activa tu espacio en Munirix</h1>
-              <p>{tenantName} · {userEmail}</p>
+              <h1>
+                {tenantStatus === 'trial'
+                  ? 'Activa tu plan definitivo en Munirix'
+                  : 'Tu prueba gratuita de 3 días finalizó'}
+              </h1>
+              <p>
+                {tenantStatus === 'trial'
+                  ? `${tenantName} · ${userEmail} · Puedes activar tu suscripción cuando gustes`
+                  : `${tenantName} · ${userEmail} · Elige un plan para continuar o cierra sesión sin compromiso`}
+              </p>
             </div>
           </div>
-          <LogoutButton className={styles.logoutBtn} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {tenantStatus === 'trial' && (
+              <a href="/dashboard" className={styles.logoutBtn} style={{ textDecoration: 'none' }}>
+                Volver al Dashboard
+              </a>
+            )}
+            <LogoutButton className={styles.logoutBtn} />
+          </div>
         </div>
 
         {loading ? (

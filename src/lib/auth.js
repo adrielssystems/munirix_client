@@ -3,6 +3,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { getServerSession } from "next-auth/next";
 import bcrypt from "bcryptjs";
 import { query } from "./db.js";
+import { ensureBillingSchema } from "./billing.js";
 import { normalizeModules, hasModule } from "./modules.js";
 import {
   findOrProvisionGoogleUser,
@@ -54,7 +55,7 @@ export function createAuthOptions({ cookiePrefix = "munirix", requireSuperadminO
         if (requireSuperadminOnly && user.role !== "superadmin") {
           throw new Error("Esta consola es exclusiva para Superadministradores de Munirix.");
         }
-        if (user.role !== "superadmin" && !["active", "pending_payment"].includes(user.tenant_status)) {
+        if (user.role !== "superadmin" && !["active", "trial", "pending_payment"].includes(user.tenant_status)) {
           throw new Error("El acceso para esta organización está suspendido.");
         }
 
@@ -223,8 +224,10 @@ export async function getActiveTenantContext(requiredModule = null, customAuthOp
     return { ok: false, status: 403, error: "Usuario sin organización asignada" };
   }
 
+  await ensureBillingSchema();
+
   const tenantRes = await query(
-    `SELECT id, name, slug, status, industry, timezone, enabled_modules, branding, business_hours, settings, onboarding_completed, account_type
+    `SELECT id, name, slug, status, industry, timezone, enabled_modules, branding, business_hours, settings, onboarding_completed, account_type, plan_code, trial_starts_at, trial_ends_at
      FROM tenants
      WHERE id = $1
      LIMIT 1`,
@@ -235,8 +238,21 @@ export async function getActiveTenantContext(requiredModule = null, customAuthOp
   if (!tenant) {
     return { ok: false, status: 404, error: "Organización no encontrada" };
   }
-  if (session.user.role !== "superadmin" && !["active", "pending_payment"].includes(tenant.status)) {
+  if (session.user.role !== "superadmin" && !["active", "trial", "pending_payment"].includes(tenant.status)) {
     return { ok: false, status: 403, error: "Organización suspendida" };
+  }
+
+  // Verificar si venció el período de prueba gratuita de 3 días
+  if (
+    tenant.status === "trial" &&
+    tenant.trial_ends_at &&
+    new Date(tenant.trial_ends_at).getTime() <= Date.now()
+  ) {
+    await query(
+      `UPDATE tenants SET status = 'pending_payment', updated_at = NOW() WHERE id = $1 AND status = 'trial'`,
+      [tenant.id]
+    );
+    tenant.status = "pending_payment";
   }
 
   const enabledModules = normalizeModules(tenant.enabled_modules);
