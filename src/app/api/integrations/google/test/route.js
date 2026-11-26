@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { getActiveTenantContext } from '@/lib/auth';
 import { getAuthorizedGoogleClient } from '@/lib/google/auth';
