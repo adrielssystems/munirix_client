@@ -67,6 +67,17 @@ export async function POST(req) {
     const { planCode, paymentMethod, referenceCode, payerDetails } = parsed.data;
     const plan = PLANS_CATALOG[planCode];
 
+    const existingPending = await query(
+      `SELECT id FROM payment_requests WHERE tenant_id = $1 AND status = 'pending' LIMIT 1`,
+      [ctx.tenantId]
+    );
+    if (existingPending.rowCount > 0) {
+      return NextResponse.json(
+        { error: 'Ya tienes un comprobante en proceso de certificación. Espera a que sea verificado.' },
+        { status: 409 }
+      );
+    }
+
     const inserted = await query(
       `INSERT INTO payment_requests (tenant_id, user_id, plan_code, amount_usd, payment_method, reference_code, payer_details, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, 'pending')

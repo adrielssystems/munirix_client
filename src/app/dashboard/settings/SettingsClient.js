@@ -1033,7 +1033,7 @@ export default function SettingsClient() {
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', marginTop: '0.2rem' }}>
                   {showAdvanced
                     ? 'Activa tus servicios directamente en console.cloud.google.com con nuestra guía paso a paso y conecta tu cuenta.'
-                    : 'Autoriza con un clic para que Munirix consulte tu disponibilidad y agende citas en tu Google Calendar.'}
+                    : 'Opcional: si no usas Google Calendar, tus citas se gestionan directamente en la Agenda interna de Munirix.'}
                 </p>
               </div>
               <span className={`hc-pill ${data.googleIntegration.status === 'connected' ? 'hc-pill-emerald' : 'hc-pill-amber'}`}>

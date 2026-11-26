@@ -106,6 +106,7 @@ export default function BillingClient({ initialPlan, tenantName, userEmail }) {
       setLatestPayment(json.payment);
       setReferenceCode('');
       setSuccessMsg('¡Pago reportado! Estamos certificando tu transferencia para activar tu espacio.');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       setError('Error de conexión al reportar tu pago.');
     } finally {
@@ -151,30 +152,6 @@ export default function BillingClient({ initialPlan, tenantName, userEmail }) {
           <div className={styles.loadingBox}>Cargando pasarela de pago...</div>
         ) : (
           <>
-            {latestPayment?.status === 'pending' && (
-              <div className={styles.pendingBanner}>
-                <Clock size={18} color="#fbbf24" />
-                <div style={{ flex: 1 }}>
-                  <strong>Pago en proceso de certificación</strong>
-                  <p>
-                    Reportaste <strong>${latestPayment.amount_usd} USD</strong> por{' '}
-                    <strong>{latestPayment.payment_method.toUpperCase()}</strong> (Ref:{' '}
-                    <code>{latestPayment.reference_code}</code>). En cuanto certifiquemos el ingreso, tu espacio se activará automáticamente.
-                  </p>
-                </div>
-                <div className={styles.bannerActions}>
-                  <button type="button" className={styles.refreshBtn} onClick={loadBilling}>
-                    <RefreshCw size={14} />
-                    <span>Verificar activación</span>
-                  </button>
-                  <a href={waLink} target="_blank" rel="noreferrer" className={styles.waBtn}>
-                    <MessageCircle size={14} />
-                    <span>Notificar por WhatsApp</span>
-                  </a>
-                </div>
-              </div>
-            )}
-
             {latestPayment?.status === 'rejected' && (
               <div className={styles.errorBox}>
                 <AlertCircle size={17} />
@@ -199,6 +176,32 @@ export default function BillingClient({ initialPlan, tenantName, userEmail }) {
               </div>
             )}
 
+            {latestPayment?.status === 'pending' ? (
+              <div className={styles.pendingBanner} style={{ padding: '1.5rem', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <Clock size={22} color="#fbbf24" />
+                  <strong style={{ fontSize: '1.08rem' }}>¡Comprobante recibido! Pago en proceso de certificación</strong>
+                </div>
+                <p style={{ fontSize: '0.9rem' }}>
+                  Reportaste <strong>${latestPayment.amount_usd} USD</strong> por{' '}
+                  <strong>{latestPayment.payment_method.toUpperCase()}</strong> (Referencia:{' '}
+                  <code>{latestPayment.reference_code}</code>).
+                  <br />
+                  Nuestro equipo está validando tu pago. En cuanto sea certificado, tu espacio se activará automáticamente y podrás configurar tu Agente IA.
+                </p>
+                <div className={styles.bannerActions}>
+                  <button type="button" className={styles.refreshBtn} onClick={loadBilling}>
+                    <RefreshCw size={14} />
+                    <span>Verificar si ya está activo</span>
+                  </button>
+                  <a href={waLink} target="_blank" rel="noreferrer" className={styles.waBtn}>
+                    <MessageCircle size={14} />
+                    <span>Notificar por WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <>
             {/* 1. SELECCIÓN DE PLAN */}
             <div className={styles.sectionTitle}>1. Elige tu plan mensual</div>
             <div className={styles.planGrid}>
@@ -381,6 +384,8 @@ export default function BillingClient({ initialPlan, tenantName, userEmail }) {
                   : `Reportar Pago ($${activePlan.priceUsd} USD) y Solicitar Activación`}
               </button>
             </form>
+              </>
+            )}
           </>
         )}
       </div>
