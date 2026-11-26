@@ -54,7 +54,7 @@ export function createAuthOptions({ cookiePrefix = "munirix", requireSuperadminO
         if (requireSuperadminOnly && user.role !== "superadmin") {
           throw new Error("Esta consola es exclusiva para Superadministradores de Munirix.");
         }
-        if (user.role !== "superadmin" && user.tenant_status !== "active") {
+        if (user.role !== "superadmin" && !["active", "pending_payment"].includes(user.tenant_status)) {
           throw new Error("El acceso para esta organización está suspendido.");
         }
 
@@ -235,7 +235,7 @@ export async function getActiveTenantContext(requiredModule = null, customAuthOp
   if (!tenant) {
     return { ok: false, status: 404, error: "Organización no encontrada" };
   }
-  if (session.user.role !== "superadmin" && tenant.status !== "active") {
+  if (session.user.role !== "superadmin" && !["active", "pending_payment"].includes(tenant.status)) {
     return { ok: false, status: 403, error: "Organización suspendida" };
   }
 

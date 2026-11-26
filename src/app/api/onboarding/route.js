@@ -45,6 +45,9 @@ export async function POST(request) {
     if (!ctx.ok) {
       return NextResponse.json({ error: ctx.error }, { status: ctx.status });
     }
+    if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Tu pago debe ser certificado antes de activar el espacio.' }, { status: 402 });
+    }
 
     const body = await request.json();
     const parsed = onboardingSchema.safeParse(body);

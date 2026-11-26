@@ -12,6 +12,10 @@ export default async function DashboardLayout({ children }) {
     redirect('/login');
   }
 
+  if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+    redirect('/billing');
+  }
+
   if (!ctx.tenant.onboarding_completed && ctx.user.role !== 'superadmin') {
     redirect('/onboarding');
   }

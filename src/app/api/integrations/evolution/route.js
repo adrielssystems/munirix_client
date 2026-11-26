@@ -32,6 +32,9 @@ async function getTenantEvolutionCreds(tenantId, fallbackSlug = '') {
 export async function GET() {
   const ctx = await getActiveTenantContext();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+    return NextResponse.json({ error: 'Tu pago debe ser certificado antes de conectar WhatsApp.' }, { status: 402 });
+  }
 
   const creds = await getTenantEvolutionCreds(ctx.tenantId, ctx.tenant?.slug);
   if (!creds.apiUrl || !creds.instance || !creds.apiKey) {
@@ -57,6 +60,9 @@ export async function GET() {
 export async function POST(req) {
   const ctx = await getActiveTenantContext();
   if (!ctx.ok) return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+    return NextResponse.json({ error: 'Tu pago debe ser certificado antes de conectar WhatsApp.' }, { status: 402 });
+  }
 
   try {
     const body = await req.json();

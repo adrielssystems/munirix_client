@@ -11,6 +11,10 @@ export default async function OnboardingPage({ searchParams }) {
     redirect('/login');
   }
 
+  if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+    redirect('/billing');
+  }
+
   const sp = await searchParams;
   const isReconfigure = sp?.reconfigure === '1';
 

@@ -165,7 +165,7 @@ export async function findOrProvisionGoogleUser({ email, name, googleSub, avatar
   }
 
   if (existing) {
-    if (existing.role !== 'superadmin' && existing.tenant_status !== 'active') {
+    if (existing.role !== 'superadmin' && !['active', 'pending_payment'].includes(existing.tenant_status)) {
       throw new Error('El acceso para esta organización está suspendido.');
     }
 
@@ -194,7 +194,7 @@ export async function findOrProvisionGoogleUser({ email, name, googleSub, avatar
 
     const tenantRes = await client.query(
       `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type)
-       VALUES ($1, $2, 'active', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
+       VALUES ($1, $2, 'pending_payment', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
        RETURNING id`,
       [workspaceName, slug, JSON.stringify(DEFAULT_MODULES)]
     );
@@ -257,7 +257,7 @@ export async function registerEmailTenantUser({ name, email, password }) {
 
     const tenantRes = await client.query(
       `INSERT INTO tenants (name, slug, status, industry, timezone, enabled_modules, onboarding_completed, account_type)
-       VALUES ($1, $2, 'active', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
+       VALUES ($1, $2, 'pending_payment', 'general', 'America/Caracas', $3::jsonb, FALSE, 'business')
        RETURNING id`,
       [workspaceName, slug, JSON.stringify(DEFAULT_MODULES)]
     );
