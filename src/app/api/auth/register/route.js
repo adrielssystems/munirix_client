@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { registerEmailTenantUser } from '@/lib/tenant-provisioning';
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit';
 
 const registerSchema = z.object({
   name: z.string().trim().min(2, 'Ingresa tu nombre completo (mínimo 2 caracteres).').max(120),
@@ -13,6 +14,14 @@ const registerSchema = z.object({
 
 export async function POST(request) {
   try {
+    const ip = getClientIp(request);
+    const rl = checkRateLimit(`register:${ip}`, { limit: 5, windowMs: 15 * 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiados intentos de registro. Intenta de nuevo en unos minutos.' },
+        { status: 429 }
+      );
+    }
     const body = await request.json();
     const parsed = registerSchema.safeParse(body);
 

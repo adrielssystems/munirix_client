@@ -3,6 +3,7 @@ import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { getActiveTenantContext } from '@/lib/auth';
 import { resolveTenantLLM } from '@/lib/ai/provider';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,6 +33,14 @@ export async function POST(request) {
     const ctx = await getActiveTenantContext();
     if (!ctx.ok) {
       return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+    }
+    if (ctx.tenant.status === 'pending_payment' && ctx.user.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Tu prueba gratuita expiró. Activa un plan para continuar.' }, { status: 402 });
+    }
+
+    const rl = checkRateLimit(`ai-assist:${ctx.tenantId}`, { limit: 20, windowMs: 10 * 60 * 1000 });
+    if (!rl.allowed) {
+      return NextResponse.json({ error: 'Demasiadas consultas seguidas al asistente. Espera unos minutos.' }, { status: 429 });
     }
 
     const body = await request.json();

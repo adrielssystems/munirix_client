@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getActiveTenantContext } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { ensureBillingSchema, getBillingAccounts, PLANS_CATALOG } from '@/lib/billing';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,11 @@ export async function GET() {
   const ctx = await getActiveTenantContext();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  }
+
+  const rl = checkRateLimit(`billing:${ctx.tenantId}`, { limit: 6, windowMs: 15 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Demasiados intentos de reporte. Espera unos minutos.' }, { status: 429 });
   }
 
   await ensureBillingSchema();
@@ -53,6 +59,11 @@ export async function POST(req) {
   const ctx = await getActiveTenantContext();
   if (!ctx.ok) {
     return NextResponse.json({ error: ctx.error }, { status: ctx.status });
+  }
+
+  const rl = checkRateLimit(`billing:${ctx.tenantId}`, { limit: 6, windowMs: 15 * 60 * 1000 });
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Demasiados intentos de reporte. Espera unos minutos.' }, { status: 429 });
   }
 
   try {
