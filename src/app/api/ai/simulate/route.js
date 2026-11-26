@@ -35,7 +35,14 @@ export async function POST(req) {
 
     return NextResponse.json(result);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[AI SIMULATE] Error:', error);
+    return NextResponse.json(
+      {
+        error:
+          'En este momento tenemos una eventualidad temporal al consultar el agente. En breve podrás continuar.',
+      },
+      { status: 503 }
+    );
   }
 }
 

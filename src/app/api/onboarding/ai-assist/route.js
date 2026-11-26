@@ -127,8 +127,11 @@ export async function POST(request) {
   } catch (err) {
     console.error('[ONBOARDING AI-ASSIST] Error:', err);
     return NextResponse.json(
-      { error: err.message || 'No se pudo consultar al asistente de configuración.' },
-      { status: 500 }
+      {
+        error:
+          'En este momento tenemos una eventualidad temporal con el asistente. En breve podrás continuar o puedes usar la Selección Manual Rápida.',
+      },
+      { status: 503 }
     );
   }
 }

@@ -1,4 +1,4 @@
-﻿import { generateText, tool, stepCountIs } from 'ai';
+import { generateText, tool, stepCountIs } from 'ai';
 import { z } from 'zod';
 import { query } from '../db.js';
 import { resolveTenantLLM, resolveFallbackLLM } from '../ai/provider.js';
