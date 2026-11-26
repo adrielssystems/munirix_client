@@ -4,14 +4,17 @@ import OnboardingClient from './OnboardingClient';
 
 export const dynamic = 'force-dynamic';
 
-export default async function OnboardingPage() {
+export default async function OnboardingPage({ searchParams }) {
   const ctx = await getActiveTenantContext();
 
   if (!ctx.ok) {
     redirect('/login');
   }
 
-  if (ctx.tenant.onboarding_completed && ctx.user.role !== 'superadmin') {
+  const sp = await searchParams;
+  const isReconfigure = sp?.reconfigure === '1';
+
+  if (ctx.tenant.onboarding_completed && !isReconfigure && ctx.user.role !== 'superadmin') {
     redirect('/dashboard');
   }
 

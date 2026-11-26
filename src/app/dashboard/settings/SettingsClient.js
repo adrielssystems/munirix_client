@@ -47,6 +47,7 @@ const PROVIDER_DOCS = {
 
 export default function SettingsClient() {
   const [tab, setTab] = useState('ai');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState('');
@@ -91,7 +92,7 @@ export default function SettingsClient() {
   });
 
   // Simulador IA
-  const [simInput, setSimInput] = useState('Hola, quiero agendar una cita para revisar acné esta semana');
+  const [simInput, setSimInput] = useState('Hola, quisiera información sobre sus servicios y horarios disponibles esta semana');
   const [simRunning, setSimRunning] = useState(false);
   const [simResult, setSimResult] = useState(null);
 
@@ -326,20 +327,42 @@ export default function SettingsClient() {
   );
 
   const tabs = [
-    { id: 'ai', label: 'Agente IA & API Keys', icon: Bot },
-    { id: 'whatsapp', label: 'WhatsApp (Evolution / Meta)', icon: MessageSquare },
-    { id: 'google', label: 'Google Cloud & Workspace', icon: Calendar },
-    { id: 'services', label: 'Servicios & Triaje', icon: Sparkles },
+    { id: 'ai', label: 'Mi Agente IA', icon: Bot },
+    { id: 'whatsapp', label: 'WhatsApp', icon: MessageSquare },
+    { id: 'google', label: 'Google Calendar', icon: Calendar },
+    { id: 'services', label: 'Servicios / Catálogo', icon: Sparkles },
     { id: 'hours', label: 'Horarios', icon: Clock },
   ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.4rem' }}>
-      <div>
-        <h1 style={{ fontSize: '1.85rem', fontWeight: 700 }}>Configuración de {data.tenant.name}</h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '0.25rem' }}>
-          Gestiona tu proveedor IA y API keys, conecta WhatsApp con Evolution API (o migra a Meta Oficial), y activa tus servicios en Google Cloud Console.
-        </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.85rem', fontWeight: 700 }}>Configuración de {data.tenant.name}</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.92rem', marginTop: '0.25rem' }}>
+            Ajusta cómo responde tu agente, tus servicios, horarios y conexión con WhatsApp y Google.
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+          <a
+            href="/onboarding?reconfigure=1"
+            className="hc-btn"
+            style={{ borderRadius: '9999px', fontSize: '0.8rem' }}
+          >
+            <Sparkles size={14} color="#22d3ee" />
+            <span>Reconfigurar con Asistente IA</span>
+          </a>
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className={`hc-btn ${showAdvanced ? 'hc-btn-primary' : ''}`}
+            style={{ borderRadius: '9999px', fontSize: '0.8rem' }}
+          >
+            <KeyRound size={14} />
+            <span>{showAdvanced ? 'Ocultar Opciones Avanzadas' : 'Opciones Avanzadas (API / Dev)'}</span>
+          </button>
+        </div>
       </div>
 
       {notice && (
@@ -389,9 +412,13 @@ export default function SettingsClient() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.15rem', gap: '0.75rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.15rem', fontWeight: 600 }}>Tipo de IA & Bóveda de API Keys</h2>
+                <h2 style={{ fontSize: '1.15rem', fontWeight: 600 }}>
+                  {showAdvanced ? 'Motor de IA & Bóveda de API Keys' : 'Personalidad e Instrucciones del Agente'}
+                </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.2rem' }}>
-                  Elige el motor activo y guarda tus claves cifradas con AES-256-GCM.
+                  {showAdvanced
+                    ? 'Elige el motor activo y guarda tus claves cifradas con AES-256-GCM.'
+                    : 'Describe con tus palabras cómo debe atender, qué reglas seguir y la información de tu negocio.'}
                 </p>
               </div>
               <SquishSwitch
@@ -409,6 +436,8 @@ export default function SettingsClient() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {showAdvanced && (
+                <>
               {/* Selector visual de proveedor LLM */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.6rem' }}>
                 {Object.values(providerCatalog).map((prov) => {
@@ -572,14 +601,16 @@ export default function SettingsClient() {
                   );
                 })}
               </div>
+                </>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  System Prompt del Agente
+                  Instrucciones del Agente (¿Cómo debe responder y qué rol cumple?)
                 </label>
                 <textarea
                   className="hc-textarea"
-                  rows={3}
+                  rows={4}
                   value={aiForm.system_prompt}
                   onChange={(e) => setAiForm({ ...aiForm, system_prompt: e.target.value })}
                 />
@@ -587,7 +618,7 @@ export default function SettingsClient() {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
-                  Base de Conocimiento (ubicación, seguros, precios, políticas)
+                  Información del Negocio (ubicación, precios, métodos de pago, políticas)
                 </label>
                 <textarea
                   className="hc-textarea"
@@ -629,7 +660,7 @@ export default function SettingsClient() {
               Simulador en Vivo (Tool Calling + Agenda)
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.83rem', marginBottom: '1.1rem' }}>
-              Prueba el motor activo (<strong>{aiForm.provider} / {aiForm.model}</strong>) consultando disponibilidad real y triaje dermatológico sin escribir a pacientes.
+              Prueba tu agente (<strong>{aiForm.provider} / {aiForm.model}</strong>) consultando tu catálogo real y disponibilidad sin escribir a clientes.
             </p>
 
             <form onSubmit={handleSimulateAI} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
@@ -638,7 +669,7 @@ export default function SettingsClient() {
                 rows={4}
                 value={simInput}
                 onChange={(e) => setSimInput(e.target.value)}
-                placeholder="Ej. Hola, quiero agendar para revisión de lunares mañana en la mañana"
+                placeholder="Ej. Hola, quiero consultar precios y horarios disponibles para mañana"
               />
               <button type="submit" className="hc-btn hc-btn-emerald" disabled={simRunning}>
                 <Send size={15} />
