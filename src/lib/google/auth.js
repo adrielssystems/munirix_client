@@ -129,7 +129,7 @@ export async function buildGoogleAuthUrl({ tenantId, userId, products = ['calend
   const url = oauth2Client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
-    include_granted_scopes: true,
+    include_granted_scopes: false,
     scope: scopes,
     state,
   });

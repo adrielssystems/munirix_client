@@ -22,10 +22,13 @@ export async function POST() {
   }
 
   const scopes = client.integration.scopes || [];
+  const enabledProducts = Array.isArray(client.integration.enabled_products)
+    ? client.integration.enabled_products
+    : ['calendar'];
   const results = {};
 
   // 1. Calendar
-  if (scopes.some((s) => s.includes('calendar'))) {
+  if (enabledProducts.includes('calendar') && scopes.some((s) => s.includes('calendar'))) {
     try {
       const cal = google.calendar({ version: 'v3', auth: client.auth });
       const list = await cal.calendarList.list({ maxResults: 5 });
@@ -36,7 +39,7 @@ export async function POST() {
   }
 
   // 2. Drive
-  if (scopes.some((s) => s.includes('drive'))) {
+  if (enabledProducts.includes('drive') && scopes.some((s) => s.includes('drive'))) {
     try {
       const drive = google.drive({ version: 'v3', auth: client.auth });
       const about = await drive.about.get({ fields: 'user(emailAddress)' });
@@ -47,7 +50,7 @@ export async function POST() {
   }
 
   // 3. Gmail
-  if (scopes.some((s) => s.includes('gmail'))) {
+  if (enabledProducts.includes('gmail') && scopes.some((s) => s.includes('gmail'))) {
     try {
       const gmail = google.gmail({ version: 'v1', auth: client.auth });
       const prof = await gmail.users.getProfile({ userId: 'me' });
@@ -58,12 +61,12 @@ export async function POST() {
   }
 
   // 4. Sheets
-  if (scopes.some((s) => s.includes('spreadsheets'))) {
+  if (enabledProducts.includes('sheets') && scopes.some((s) => s.includes('spreadsheets'))) {
     results.sheets = { ok: true, detail: 'Scope de Google Sheets autorizado y listo' };
   }
 
   // 5. Contacts
-  if (scopes.some((s) => s.includes('contacts'))) {
+  if (enabledProducts.includes('contacts') && scopes.some((s) => s.includes('contacts'))) {
     try {
       const people = google.people({ version: 'v1', auth: client.auth });
       const conn = await people.people.connections.list({

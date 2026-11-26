@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { google } from 'googleapis';
 import { query } from '@/lib/db';
 import { encryptSecret } from '@/lib/crypto';

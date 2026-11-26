@@ -1,4 +1,4 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getActiveTenantContext } from '@/lib/auth';
 import { buildGoogleAuthUrl } from '@/lib/google/auth';
 
