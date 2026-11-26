@@ -727,14 +727,24 @@ export default function SettingsClient() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.2rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Motor de WhatsApp (Dual-Provider)</h2>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                  {showAdvanced ? 'Motor de WhatsApp (Dual-Provider)' : 'Conectar tu WhatsApp'}
+                </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', marginTop: '0.2rem' }}>
-                  Empieza con <strong>Evolution API</strong> para clientes de bajo consumo y migra a <strong>Meta Cloud API Oficial</strong> con un clic cuando escalen, sin perder chats ni citas.
+                  {showAdvanced
+                    ? 'Empieza con Evolution API para clientes de bajo consumo y migra a Meta Cloud API Oficial con un clic cuando escalen.'
+                    : 'Escanea el código QR desde tu teléfono (WhatsApp > Dispositivos vinculados) para activar tu agente en segundos.'}
                 </p>
               </div>
               <SquishSwitch
                 checked={waForm.bot_enabled}
-                onChange={(v) => setWaForm({ ...waForm, bot_enabled: v })}
+                onChange={(v) => {
+                  const next = { ...waForm, bot_enabled: v };
+                  setWaForm(next);
+                  if (!showAdvanced) {
+                    saveSection({ whatsappConfig: next }, v ? 'Bot IA de WhatsApp activado.' : 'Bot IA de WhatsApp pausado.');
+                  }
+                }}
                 width={50}
                 height={27}
                 radius={14}
@@ -746,6 +756,8 @@ export default function SettingsClient() {
               />
             </div>
 
+            {showAdvanced && (
+              <>
             {/* Selector Evolution API vs Meta Oficial */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem', marginBottom: '1.4rem' }}>
               <button
@@ -772,7 +784,7 @@ export default function SettingsClient() {
                   <span className="hc-pill hc-pill-emerald">Bajo consumo</span>
                 </div>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem', lineHeight: 1.45 }}>
-                  Ideal para consultorios arrancando: conecta el WhatsApp actual escaneando QR sin costo por conversación ni aprobación previa de plantillas.
+                  Ideal para negocios arrancando: conecta tu WhatsApp actual escaneando QR sin costo por conversación ni aprobación previa de plantillas.
                 </p>
               </button>
 
@@ -804,9 +816,13 @@ export default function SettingsClient() {
                 </p>
               </button>
             </div>
+              </>
+            )}
 
-            {waForm.whatsapp_provider === 'evolution' ? (
+            {(!showAdvanced || waForm.whatsapp_provider === 'evolution') ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+                {showAdvanced && (
+                  <>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '0.9rem' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>
@@ -855,19 +871,23 @@ export default function SettingsClient() {
                     <span>{copiedKey === 'evo_wh' ? 'Copiado' : 'Copiar'}</span>
                   </button>
                 </div>
+                  </>
+                )}
 
                 <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="hc-btn hc-btn-primary"
-                    disabled={saving}
-                    onClick={() =>
-                      saveSection({ whatsappConfig: waForm }, 'Configuración de Evolution API guardada y cifrada.')
-                    }
-                  >
-                    <Save size={15} />
-                    <span>Guardar Evolution API</span>
-                  </button>
+                  {showAdvanced && (
+                    <button
+                      type="button"
+                      className="hc-btn hc-btn-primary"
+                      disabled={saving}
+                      onClick={() =>
+                        saveSection({ whatsappConfig: waForm }, 'Configuración de Evolution API guardada y cifrada.')
+                      }
+                    >
+                      <Save size={15} />
+                      <span>Guardar Evolution API</span>
+                    </button>
+                  )}
                   <button type="button" className="hc-btn hc-btn-emerald" disabled={evoLoading} onClick={handleConnectEvolutionQR}>
                     <QrCode size={15} />
                     <span>{evoLoading ? 'Conectando...' : 'Generar QR / Vincular WhatsApp'}</span>
@@ -876,10 +896,12 @@ export default function SettingsClient() {
                     <RefreshCw size={15} />
                     <span>Verificar Estado</span>
                   </button>
-                  <button type="button" className="hc-btn" disabled={evoLoading} onClick={handleSetEvolutionWebhook}>
-                    <Webhook size={15} />
-                    <span>Configurar Webhook Automático</span>
-                  </button>
+                  {showAdvanced && (
+                    <button type="button" className="hc-btn" disabled={evoLoading} onClick={handleSetEvolutionWebhook}>
+                      <Webhook size={15} />
+                      <span>Configurar Webhook Automático</span>
+                    </button>
+                  )}
                 </div>
 
                 {evoStatus && (
@@ -1005,9 +1027,13 @@ export default function SettingsClient() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.15rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>Google Workspace por Tenant (Agenda, Gmail, Sheets, Drive y Contactos)</h2>
+                <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                  {showAdvanced ? 'Google Workspace por Tenant (Agenda, Gmail, Sheets, Drive y Contactos)' : 'Conectar tu Cuenta de Google'}
+                </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', marginTop: '0.2rem' }}>
-                  Activa tus servicios directamente en <strong>console.cloud.google.com</strong> con nuestra guía paso a paso y conecta tu cuenta.
+                  {showAdvanced
+                    ? 'Activa tus servicios directamente en console.cloud.google.com con nuestra guía paso a paso y conecta tu cuenta.'
+                    : 'Autoriza con un clic para que Munirix consulte tu disponibilidad y agende citas en tu Google Calendar.'}
                 </p>
               </div>
               <span className={`hc-pill ${data.googleIntegration.status === 'connected' ? 'hc-pill-emerald' : 'hc-pill-amber'}`}>
@@ -1064,15 +1090,17 @@ export default function SettingsClient() {
                         thumbOnColor="#07080a"
                       />
                     </div>
-                    <a
-                      href={api.enableUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ fontSize: '0.75rem', color: '#22d3ee', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600 }}
-                    >
-                      <span>Habilitar en Google Cloud Console</span>
-                      <ExternalLink size={12} />
-                    </a>
+                    {showAdvanced && (
+                      <a
+                        href={api.enableUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ fontSize: '0.75rem', color: '#22d3ee', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontWeight: 600 }}
+                      >
+                        <span>Habilitar en Google Cloud Console</span>
+                        <ExternalLink size={12} />
+                      </a>
+                    )}
                   </div>
                 );
               })}
@@ -1173,7 +1201,8 @@ export default function SettingsClient() {
             )}
           </SpotlightCard>
 
-          {/* ASISTENTE PASO A PASO EN CONSOLE.CLOUD.GOOGLE.COM */}
+          {/* ASISTENTE PASO A PASO EN CONSOLE.CLOUD.GOOGLE.COM (Solo Modo Avanzado) */}
+          {showAdvanced && (
           <SpotlightCard
             spotlightColor="#6366F1"
             intensity={0.12}
@@ -1302,6 +1331,7 @@ export default function SettingsClient() {
               </button>
             </div>
           </SpotlightCard>
+          )}
         </div>
       )}
 
@@ -1317,13 +1347,13 @@ export default function SettingsClient() {
             style={{ padding: '1.5rem', borderRadius: '16px', backgroundColor: '#111520' }}
           >
             <h2 style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '1rem' }}>
-              Nuevo Motivo de Consulta / Servicio
+              Nuevo Servicio o Producto
             </h2>
             <form onSubmit={handleAddService} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '0.85rem' }}>
               <input
                 className="hc-input"
                 required
-                placeholder="Nombre (Ej. Láser CO2 / Acné)"
+                placeholder="Nombre (Ej. Corte y Barba, Asesoría, Consulta)"
                 value={newService.name}
                 onChange={(e) => setNewService({ ...newService, name: e.target.value })}
               />
@@ -1346,19 +1376,19 @@ export default function SettingsClient() {
               <input
                 className="hc-input"
                 type="number"
-                placeholder="Seguimiento post-consulta (días)"
+                placeholder="Días para seguimiento"
                 value={newService.follow_up_days}
                 onChange={(e) => setNewService({ ...newService, follow_up_days: Number(e.target.value) })}
               />
               <input
                 className="hc-input"
-                placeholder="Keywords triaje (acne, manchas, piel)"
+                placeholder="Palabras clave (ej. precio, cita, promo)"
                 value={newService.triage_keywords}
                 onChange={(e) => setNewService({ ...newService, triage_keywords: e.target.value })}
               />
               <input
                 className="hc-input"
-                placeholder="Preparación previa al procedimiento"
+                placeholder="Notas o indicaciones para el cliente"
                 value={newService.preparation_notes}
                 onChange={(e) => setNewService({ ...newService, preparation_notes: e.target.value })}
               />
