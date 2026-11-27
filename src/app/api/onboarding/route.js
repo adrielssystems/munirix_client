@@ -127,7 +127,7 @@ export async function POST(request) {
       if ((existingSvc.rows[0]?.total || 0) === 0) {
         for (const svc of services) {
           await query(
-            `INSERT INTO services (tenant_id, name, duration_minutes, price, preparation_notes, active)
+            `INSERT INTO services (tenant_id, name, duration_minutes, price, preparation_notes, is_active)
              VALUES ($1, $2, $3, $4, $5, TRUE)`,
             [
               ctx.tenantId,

@@ -9,8 +9,8 @@ export const LLM_PROVIDER_CATALOG = {
   gemini: {
     id: 'gemini',
     label: 'Google Gemini',
-    defaultModel: 'gemini-2.5-flash',
-    models: ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-2.0-flash'],
+    defaultModel: 'gemini-3.8-flash',
+    models: ['gemini-3.8-flash', 'gemini-2.5-pro', 'gemini-2.5-flash'],
     envKey: 'GEMINI_API_KEY',
   },
   deepseek: {
@@ -84,7 +84,7 @@ export async function resolveTenantLLM(tenantId) {
 
   const platformDefaults = platformRes.rows[0]?.value || {
     admin_provider: 'gemini',
-    admin_model: 'gemini-2.5-flash',
+    admin_model: 'gemini-3.8-flash',
     fallback_provider: 'deepseek',
     fallback_model: 'deepseek-chat',
   };
@@ -92,7 +92,7 @@ export async function resolveTenantLLM(tenantId) {
   const cfg = aiRes.rows[0] || {
     enabled: true,
     provider: platformDefaults.admin_provider || 'gemini',
-    model: platformDefaults.admin_model || 'gemini-2.5-flash',
+    model: platformDefaults.admin_model || 'gemini-3.8-flash',
     use_platform_key: true,
     temperature: 0.3,
     system_prompt: '',
