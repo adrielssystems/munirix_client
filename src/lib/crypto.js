@@ -1,13 +1,21 @@
-﻿import crypto from 'node:crypto';
+import crypto from 'node:crypto';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 12;
 
+let devEphemeralKey;
+
 function getMasterKey() {
-  const raw =
-    process.env.ENCRYPTION_KEY ||
-    process.env.NEXTAUTH_SECRET ||
-    'munirix_dev_fallback_key_change_in_production_2026';
+  const raw = process.env.ENCRYPTION_KEY || process.env.NEXTAUTH_SECRET;
+  if (!raw) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ENCRYPTION_KEY or NEXTAUTH_SECRET must be set in production');
+    }
+    if (!devEphemeralKey) {
+      devEphemeralKey = crypto.randomBytes(32).toString('hex');
+    }
+    return crypto.createHash('sha256').update(devEphemeralKey).digest();
+  }
   return crypto.createHash('sha256').update(String(raw)).digest();
 }
 
