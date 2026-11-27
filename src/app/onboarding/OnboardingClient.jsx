@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion, MotionConfig } from 'motion/react';
@@ -105,6 +105,11 @@ export default function OnboardingClient({
   const [chatInput, setChatInput] = useState('');
   const [aiThinking, setAiThinking] = useState(false);
   const [generatedConfig, setGeneratedConfig] = useState(null);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [chatMessages, aiThinking]);
 
   useEffect(() => {
     try {
@@ -345,7 +350,7 @@ export default function OnboardingClient({
                         <span>Munirix IA</span>
                       </span>
                     )}
-                    <p>{msg.content}</p>
+                    <p>{String(msg.content || '').replace(/\*\*/g, '')}</p>
                   </div>
                 ))}
                 {aiThinking && (
@@ -357,6 +362,7 @@ export default function OnboardingClient({
                     <p style={{ opacity: 0.7 }}>Analizando tu negocio y preparando la configuración...</p>
                   </div>
                 )}
+                <div ref={chatEndRef} />
               </div>
 
               {chatMessages.length === 1 && (
